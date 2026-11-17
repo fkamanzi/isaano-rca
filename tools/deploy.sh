@@ -3,8 +3,9 @@
 # including Google Cloud Shell (no desktop keychain needed: the CLI reads
 # FORGE_EMAIL and FORGE_API_TOKEN from this shell only, nothing is saved).
 #
-#   bash tools/deploy.sh                 asks for your Atlassian email, API token and site
-#   bash tools/deploy.sh demo            same, but installs on your Forge demo site
+#   bash tools/deploy.sh                 installs on your Forge demo site (Jira, JSM, Rovo; provisioned if needed)
+#   bash tools/deploy.sh mysite.atlassian.net   installs on an existing site instead
+# Token: https://go.atlassian.com/forge-cli-api-token (API token with scopes, Forge).
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -15,10 +16,7 @@ npm install --no-audit --no-fund --loglevel=error
 read -r -p "Atlassian account email: " FORGE_EMAIL
 read -r -s -p "Atlassian API token (not shown): " FORGE_API_TOKEN
 echo
-SITE=""
-if [ "${1:-}" != demo ]; then
-    read -r -p "Your Atlassian site, for example yourname.atlassian.net: " SITE
-fi
+SITE="${1:-}"
 export FORGE_EMAIL FORGE_API_TOKEN
 forge settings set usage-analytics false >/dev/null 2>&1 || true
 
@@ -37,6 +35,8 @@ echo "== Installing on Jira"
 if [ -n "$SITE" ]; then
     forge install --non-interactive -e development --product jira --site "$SITE" --confirm-scopes
 else
+    echo "== Your Forge demo site (provisioned the first time; this can take a few minutes)"
+    forge site provision
     forge install --non-interactive -e development --product jira --demo-site --confirm-scopes
 fi
 unset FORGE_API_TOKEN
