@@ -34,6 +34,18 @@ After a major outage the root-cause report is written from memory, under pressur
 
 The logic in `src/lib/rca.js` has no Forge calls, so it is unit tested with Node: `npm test` (8 tests).
 
+## Try it in five minutes (judges)
+
+The sample incident is fictional: network element names are invented.
+
+1. Install the app on your Jira site from the installation link (an admin installs it once). Rovo must be on for the agent and the MCP tools.
+2. Open any issue in a Jira Service Management project (or any Jira issue) and click **Isaano RCA (evidence-locked)** in the issue's app buttons to add the panel.
+3. **Evidence** tab, *Paste rows from an export*: paste the contents of [demo/sample-incident.csv](demo/sample-incident.csv) and select **Import rows**. The panel names the first deviation: Transport, 130 s before IMS / voice.
+4. **Findings** tab: add a *cause*, confidence *Proven*, evidence `E1, E2, E4`, with no counterfactual. The **Publish** tab now blocks: "F1 is Proven without a counterfactual".
+5. Open Rovo chat, pick **Isaano RCA Investigator** and ask "Is this RCA ready to publish?". Then: "Update F1. Counterfactual: rolling back CHG-4471 at 17:40 UTC brought EF queue drops to 0% by 17:42 and call setup success back to 99.1% by 17:50. Evidence: E1, E2, E4, E7, E8, E9." Confirm the action when Rovo asks.
+6. The lock turns green: **Publish RCA to the ticket** posts the ten-section RCA as an internal comment.
+7. MCP: the four read-only actions (timeline, evidence, lock check, draft report) are exposed with the `rovo:mcp` module, so a custom agent in Rovo Studio, or an MCP client connected to Atlassian's MCP server, can call them.
+
 ## Install and run
 
 ```sh
