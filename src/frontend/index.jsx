@@ -8,6 +8,7 @@ import { invoke } from '@forge/bridge';
 
 const opts = (list) => (list || []).map((v) => ({ label: v, value: v }));
 const short = (iso) => (iso ? iso.replace('T', ' ').replace(/(\.\d+)?Z$/, ' UTC') : 'n/a');
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const mins = (m) => (m === null || m === undefined ? 'n/a' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`);
 // head: list of [label, width %]
 const table = (head, rows) => ({
@@ -59,7 +60,7 @@ function App() {
         <Lozenge appearance={lock.ok ? 'success' : 'removed'} isBold>{lock.ok ? 'Evidence lock: ready' : `Evidence lock: ${lock.errors.length} blocking`}</Lozenge>
         <Lozenge appearance="default">First response {mins(metrics.toFirstResponseMin)}</Lozenge>
         <Lozenge appearance="default">Time to restore {mins(metrics.toRestoreMin)}</Lozenge>
-        <Lozenge appearance="inprogress">{state.evidence.length} evidence · {state.findings.length} findings · {state.actions.length} actions</Lozenge>
+        <Lozenge appearance="inprogress">{state.evidence.length} evidence · {plural(state.findings.length, 'finding')} · {plural(state.actions.length, 'action')}</Lozenge>
         {busy ? <Spinner size="small" /> : null}
       </Inline>
       {error ? <SectionMessage appearance="error">{error}</SectionMessage> : null}
