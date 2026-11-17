@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Evidence-locked incident root-cause analysis for Jira Service Management, with a Rovo agent and MCP tools (Forge app)",
   "main": "src/index.js",
-  "type": "module",
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
