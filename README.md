@@ -44,6 +44,8 @@ forge deploy
 forge install --site <your-site>.atlassian.net --product jira
 ```
 
+From a shell without a desktop keychain (Google Cloud Shell, a CI box), `source tools/forge-env.sh you@example.com` asks for the API token once for that terminal tab, then `bash tools/deploy.sh` registers, deploys to production and installs on your Forge demo site.
+
 Open an incident in a Jira Service Management project: the **Isaano RCA (evidence-locked)** panel is under the issue. In Rovo chat, pick **Isaano RCA Investigator** from the agents.
 
 ## Licence
