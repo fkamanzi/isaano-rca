@@ -23,6 +23,7 @@ function App() {
   const [ac, setAc] = useState({ what: '', owner: '', due: '', verify: '' });
   const [notice, setNotice] = useState('');
   const [paste, setPaste] = useState('');
+  const [up, setUp] = useState({ id: '', confidence: '', evidence: '', counterfactual: '' });
   const [importResult, setImportResult] = useState(null);
 
   const call = async (name, payload) => {
@@ -126,6 +127,19 @@ function App() {
             <Label labelFor="f-cf">Counterfactual (needed for Proven)</Label>
             <Textfield id="f-cf" placeholder="Restoring the primary ring path cleared the S1 drops within 2 min" value={fd.counterfactual} onChange={(e) => setFd({ ...fd, counterfactual: e.target.value })} />
             <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addFinding', fd); if (r) setFd({ ...fd, text: '', evidence: '', counterfactual: '' }); }}>Add finding</Button></Inline>
+            {state.findings.length ? (
+              <Stack space="space.100">
+                <Heading size="small">Update a finding as evidence arrives</Heading>
+                <Inline space="space.100" shouldWrap>
+                  <Box><Label labelFor="u-id">Finding</Label><Select inputId="u-id" options={opts(state.findings.map((f) => f.id))} value={up.id ? { label: up.id, value: up.id } : null} onChange={(o) => setUp({ ...up, id: o.value })} /></Box>
+                  <Box><Label labelFor="u-conf">New confidence</Label><Select inputId="u-conf" options={opts(options.CONFIDENCE)} value={up.confidence ? { label: up.confidence, value: up.confidence } : null} onChange={(o) => setUp({ ...up, confidence: o.value })} /></Box>
+                  <Box><Label labelFor="u-ev">Evidence IDs (replace)</Label><Textfield id="u-ev" placeholder="E1, E2, E8" value={up.evidence} onChange={(e) => setUp({ ...up, evidence: e.target.value })} /></Box>
+                </Inline>
+                <Label labelFor="u-cf">Counterfactual</Label>
+                <Textfield id="u-cf" placeholder="Rolling back the change cleared the drops within 2 min" value={up.counterfactual} onChange={(e) => setUp({ ...up, counterfactual: e.target.value })} />
+                <Inline><Button isDisabled={busy || !up.id} onClick={async () => { const r = await call('updateFinding', up); if (r) setUp({ id: '', confidence: '', evidence: '', counterfactual: '' }); }}>Update finding</Button></Inline>
+              </Stack>
+            ) : null}
           </Stack>
         </TabPanel>
 

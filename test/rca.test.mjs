@@ -150,3 +150,15 @@ test('importEvidence adds valid rows, skips the header and reports bad rows', as
   assert.equal(firstDeviation(s).segment, 'Transport');
   assert.deepEqual(parseCsvLine('a\tb\t"c, d"'), ['a', 'b', 'c, d']);
 });
+
+test('updateFinding moves a finding to Proven once a counterfactual is recorded', async () => {
+  const { updateFinding } = await import('../src/lib/rca.js');
+  const s = demoState();
+  addFinding(s, { kind: 'cause', text: 'Ring R7 failover left S1 on a 1G backup', confidence: 'Proven', evidence: 'E1, E2' });
+  assert.equal(checkLock(s, issue).ok, false);
+  updateFinding(s, { id: 'f1', counterfactual: 'Primary ring restored at 09:29, S1 drops stopped within 2 min' });
+  assert.equal(s.findings[0].confidence, 'Proven');
+  assert.equal(s.findings[0].counterfactual.startsWith('Primary ring restored'), true);
+  assert.throws(() => updateFinding(s, { id: 'F9' }), /No finding F9/);
+  assert.throws(() => updateFinding(s, { id: 'F1', confidence: 'Certain' }), /Confidence must be one of/);
+});

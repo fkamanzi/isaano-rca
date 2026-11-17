@@ -270,6 +270,20 @@ export function addFinding(state, input) {
   return item;
 }
 
+// Findings move as evidence arrives (Unproven -> Supported -> Proven): update the
+// confidence, the evidence it cites or the counterfactual without re-entering it.
+export function updateFinding(state, input) {
+  const f = state.findings.find((x) => x.id === String(input.id || '').trim().toUpperCase());
+  if (!f) throw new Error(`No finding ${input.id || ''}: pick one from the list.`);
+  if (input.confidence !== undefined && input.confidence !== '') {
+    if (!CONFIDENCE.includes(input.confidence)) throw new Error(`Confidence must be one of ${CONFIDENCE.join(', ')}.`);
+    f.confidence = input.confidence;
+  }
+  if (input.evidence !== undefined && String(input.evidence).trim() !== '') f.evidence = parseIds(input.evidence);
+  if (input.counterfactual !== undefined && String(input.counterfactual).trim() !== '') f.counterfactual = clip(input.counterfactual, 300);
+  return f;
+}
+
 export function addAction(state, input) {
   if (!String(input.what || '').trim()) throw new Error('Describe the action.');
   const item = {

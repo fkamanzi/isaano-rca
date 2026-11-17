@@ -48,5 +48,5 @@ if ! forge install --non-interactive -e "$ENVIRONMENT" --product jira "${TARGET[
     echo "== Install returned an error; upgrading an existing installation instead"
     forge install --non-interactive -e "$ENVIRONMENT" --product jira "${TARGET[@]}" --upgrade --confirm-scopes
 fi
-forge install list -e "$ENVIRONMENT" || true
+forge install list || true
 echo "== Done ($APP_ID). Open any Jira issue: the 'Isaano RCA (evidence-locked)' panel is under the description."

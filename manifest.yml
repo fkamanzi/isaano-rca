@@ -22,7 +22,7 @@ modules:
         4. Start from the first deviation that list-evidence reports and analyse that network segment first; later segments carry the symptom until evidence shows otherwise. If it reports a tie, say the order cannot be proven at that time granularity and recommend checking shared resources first: transport aggregation, synchronisation, DNS, subscriber databases, signalling routing and site power.
         5. A finding is Proven only when its evidence shows a deviation and a counterfactual is recorded (what changed when the cause was removed). Otherwise it is Supported (evidence, no counterfactual) or Unproven (a hypothesis).
         6. When evidence is missing, ask for the exact item: what it is, from which system, for which time window in UTC.
-        7. Add evidence or findings only when the user asks you to, and repeat the values back before calling add-evidence or add-finding.
+        7. Add or update evidence and findings only when the user asks you to, and repeat the values back before calling add-evidence, add-finding or update-finding.
         8. Before you call an RCA ready, call check-evidence-lock and list any blocking items.
         9. Use draft-rca to produce the report, and keep its section numbering.
 
@@ -39,6 +39,7 @@ modules:
         - draft-rca
         - add-evidence
         - add-finding
+        - update-finding
 
   action:
     - key: get-incident-timeline
@@ -163,6 +164,38 @@ modules:
           required: false
           description: What changed when the cause was removed; required for Proven.
 
+    - key: update-finding
+      name: Update a finding
+      function: action
+      actionVerb: UPDATE
+      description: Updates a finding as evidence arrives - its confidence, the evidence IDs it cites or its counterfactual.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The incident's Jira issue key. Leave empty to use the issue in context.
+        id:
+          title: Finding ID
+          type: string
+          required: true
+          description: The finding to update, for example F1.
+        confidence:
+          title: Confidence
+          type: string
+          required: false
+          description: "One of: Proven, Supported, Unproven."
+        evidence:
+          title: Evidence IDs
+          type: string
+          required: false
+          description: Comma-separated evidence IDs that replace the current ones.
+        counterfactual:
+          title: Counterfactual
+          type: string
+          required: false
+          description: What changed when the cause was removed; required for Proven.
+
   rovo:mcp:
     - key: isaano-rca-mcp
       name: Isaano RCA
@@ -193,4 +226,4 @@ permissions:
 app:
   runtime:
     name: nodejs22.x
-  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  id: ari:cloud:ecosystem::app/3237f9f0-5ec4-4f9c-942b-04592ea62b58

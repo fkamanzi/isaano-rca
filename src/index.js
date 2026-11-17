@@ -5,7 +5,7 @@ import Resolver from '@forge/resolver';
 import { getIssue, addInternalComment } from './lib/jira.js';
 import { loadState, saveState } from './lib/store.js';
 import {
-  addAction, addEvidence, addFinding, checkLock, firstDeviation, importEvidence, metrics, removeItem,
+  addAction, addEvidence, addFinding, checkLock, firstDeviation, importEvidence, metrics, removeItem, updateFinding,
   reportAdf, reportMarkdown, timeline, EVIDENCE_TYPES, SEGMENTS, FINDING_KINDS, CONFIDENCE, IMPORT_COLUMNS,
 } from './lib/rca.js';
 
@@ -46,6 +46,7 @@ async function mutate(context, change) {
 
 resolver.define('addEvidence', ({ payload, context }) => mutate(context, (s) => addEvidence(s, payload)));
 resolver.define('addFinding', ({ payload, context }) => mutate(context, (s) => addFinding(s, payload)));
+resolver.define('updateFinding', ({ payload, context }) => mutate(context, (s) => updateFinding(s, payload)));
 resolver.define('addAction', ({ payload, context }) => mutate(context, (s) => addAction(s, payload)));
 resolver.define('remove', ({ payload, context }) => mutate(context, (s) => removeItem(s, payload.id)));
 
@@ -96,6 +97,12 @@ const ACTIONS = {
     const item = addEvidence(state, p);
     await saveState(issue.id, state);
     return { added: item, firstDeviation: firstDeviation(state) };
+  },
+  'update-finding': async (p) => {
+    const { issue, state } = await snapshot(issueFromAction(p));
+    const item = updateFinding(state, p);
+    await saveState(issue.id, state);
+    return { updated: item, lock: checkLock(state, issue) };
   },
   'add-finding': async (p) => {
     const { issue, state } = await snapshot(issueFromAction(p));
