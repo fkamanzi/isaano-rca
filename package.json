@@ -1,0 +1,21 @@
+{
+  "name": "isaano-rca",
+  "version": "1.0.0",
+  "description": "Evidence-locked incident root-cause analysis for Jira Service Management, with a Rovo agent and MCP tools (Forge app)",
+  "main": "src/index.js",
+  "type": "module",
+  "license": "Apache-2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "lint": "forge lint"
+  },
+  "dependencies": {
+    "@forge/api": "^8.5.0",
+    "@forge/bridge": "^7.3.0",
+    "@forge/kvs": "^2.1.2",
+    "@forge/react": "^12.5.0",
+    "@forge/resolver": "^2.0.2",
+    "react": "^18.3.1"
+  }
+}
