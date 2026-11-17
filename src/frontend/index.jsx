@@ -23,6 +23,10 @@ function App() {
   const [ac, setAc] = useState({ what: '', owner: '', due: '', verify: '' });
   const [notice, setNotice] = useState('');
   const [paste, setPaste] = useState('');
+  // Text inputs are uncontrolled (remounted through a key to clear them): with native UI Kit
+  // rendering, a controlled value can overwrite keystrokes that are still in flight.
+  const [keys, setKeys] = useState({ ev: 0, fd: 0, ac: 0, up: 0, paste: 0 });
+  const bump = (k) => setKeys((p) => ({ ...p, [k]: p[k] + 1 }));
   const [up, setUp] = useState({ id: '', confidence: '', evidence: '', counterfactual: '' });
   const [importResult, setImportResult] = useState(null);
 
@@ -84,23 +88,23 @@ function App() {
                 <Button appearance="subtle" onClick={() => remove(e.id)}>Remove</Button>]))} rowsPerPage={8} />
             <Heading size="small">Add evidence</Heading>
             <Inline space="space.100" shouldWrap>
-              <Box><Label labelFor="ev-type">Type</Label><Select inputId="ev-type" options={opts(options.EVIDENCE_TYPES)} value={{ label: ev.type, value: ev.type }} onChange={(o) => setEv({ ...ev, type: o.value })} /></Box>
-              <Box><Label labelFor="ev-seg">Segment</Label><Select inputId="ev-seg" options={opts(options.SEGMENTS)} value={{ label: ev.segment, value: ev.segment }} onChange={(o) => setEv({ ...ev, segment: o.value })} /></Box>
-              <Box><Label labelFor="ev-at">Time (UTC)</Label><Textfield id="ev-at" placeholder="2026-11-17T08:42:00Z" value={ev.at} onChange={(e) => setEv({ ...ev, at: e.target.value })} /></Box>
-              <Box><Label labelFor="ev-src">Source</Label><Textfield id="ev-src" placeholder="alarm log of eNB-1042" value={ev.source} onChange={(e) => setEv({ ...ev, source: e.target.value })} /></Box>
+              <Box><Label labelFor="ev-type">Type</Label><Select inputId="ev-type" options={opts(options.EVIDENCE_TYPES)} value={{ label: ev.type, value: ev.type }} onChange={(o) => setEv((p) => ({ ...p, type: o.value }))} /></Box>
+              <Box><Label labelFor="ev-seg">Segment</Label><Select inputId="ev-seg" options={opts(options.SEGMENTS)} value={{ label: ev.segment, value: ev.segment }} onChange={(o) => setEv((p) => ({ ...p, segment: o.value }))} /></Box>
+              <Box><Label labelFor="ev-at">Time (UTC)</Label><Textfield id="ev-at" placeholder="2026-11-17T08:42:00Z" key={`ev-at-${keys.ev}`} onChange={(e) => setEv((p) => ({ ...p, at: e.target.value }))} /></Box>
+              <Box><Label labelFor="ev-src">Source</Label><Textfield id="ev-src" placeholder="alarm log of eNB-1042" key={`ev-source-${keys.ev}`} onChange={(e) => setEv((p) => ({ ...p, source: e.target.value }))} /></Box>
             </Inline>
             <Label labelFor="ev-sum">What it shows</Label>
-            <TextArea id="ev-sum" placeholder="S1 link down to MME pool, 08:42:03 to 08:57:10" value={ev.summary} onChange={(e) => setEv({ ...ev, summary: e.target.value })} />
-            <Checkbox label="Shows a deviation (abnormal)" isChecked={ev.abnormal} onChange={(e) => setEv({ ...ev, abnormal: e.target.checked })} />
-            <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addEvidence', ev); if (r) setEv({ ...ev, at: '', summary: '', source: '' }); }}>Add evidence</Button></Inline>
+            <TextArea id="ev-sum" placeholder="S1 link down to MME pool, 08:42:03 to 08:57:10" key={`ev-summary-${keys.ev}`} onChange={(e) => setEv((p) => ({ ...p, summary: e.target.value }))} />
+            <Checkbox label="Shows a deviation (abnormal)" isChecked={ev.abnormal} onChange={(e) => setEv((p) => ({ ...p, abnormal: e.target.checked }))} />
+            <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addEvidence', ev); if (r) { setEv((p) => ({ ...p, at: '', summary: '', source: '' })); bump('ev'); } }}>Add evidence</Button></Inline>
             <Heading size="small">Paste rows from an export</Heading>
             <Text>One row per item, comma, semicolon or tab separated: {(options.IMPORT_COLUMNS || []).join(', ')}. Abnormal is yes or no; a header row is skipped.</Text>
-            <TextArea id="ev-import" placeholder="2026-11-17T06:01:00Z, Transport, kpi, AGG-KGL-01 PM, EF queue drops 0% to 2.1%, yes" value={paste} onChange={(e) => setPaste(e.target.value)} />
+            <TextArea id="ev-import" placeholder="2026-11-17T06:01:00Z, Transport, kpi, AGG-KGL-01 PM, EF queue drops 0% to 2.1%, yes" key={`paste-${keys.paste}`} onChange={(e) => setPaste(e.target.value)} />
             <Inline><Button isDisabled={busy || !paste.trim()} onClick={async () => {
               const r = await call('importEvidence', { text: paste });
               if (r) {
                 setImportResult({ count: r.imported, errors: r.importErrors || [] });
-                if (!(r.importErrors || []).length) setPaste('');
+                if (!(r.importErrors || []).length) { setPaste(''); bump('paste'); }
               }
             }}>Import rows</Button></Inline>
             {importResult ? (
@@ -118,26 +122,26 @@ function App() {
                 <Button appearance="subtle" onClick={() => remove(f.id)}>Remove</Button>]))} rowsPerPage={8} />
             <Heading size="small">Add a finding</Heading>
             <Inline space="space.100" shouldWrap>
-              <Box><Label labelFor="f-kind">Kind</Label><Select inputId="f-kind" options={opts(options.FINDING_KINDS)} value={{ label: fd.kind, value: fd.kind }} onChange={(o) => setFd({ ...fd, kind: o.value })} /></Box>
-              <Box><Label labelFor="f-conf">Confidence</Label><Select inputId="f-conf" options={opts(options.CONFIDENCE)} value={{ label: fd.confidence, value: fd.confidence }} onChange={(o) => setFd({ ...fd, confidence: o.value })} /></Box>
-              <Box><Label labelFor="f-ev">Evidence IDs</Label><Textfield id="f-ev" placeholder="E1, E3" value={fd.evidence} onChange={(e) => setFd({ ...fd, evidence: e.target.value })} /></Box>
+              <Box><Label labelFor="f-kind">Kind</Label><Select inputId="f-kind" options={opts(options.FINDING_KINDS)} value={{ label: fd.kind, value: fd.kind }} onChange={(o) => setFd((p) => ({ ...p, kind: o.value }))} /></Box>
+              <Box><Label labelFor="f-conf">Confidence</Label><Select inputId="f-conf" options={opts(options.CONFIDENCE)} value={{ label: fd.confidence, value: fd.confidence }} onChange={(o) => setFd((p) => ({ ...p, confidence: o.value }))} /></Box>
+              <Box><Label labelFor="f-ev">Evidence IDs</Label><Textfield id="f-ev" placeholder="E1, E3" key={`fd-evidence-${keys.fd}`} onChange={(e) => setFd((p) => ({ ...p, evidence: e.target.value }))} /></Box>
             </Inline>
             <Label labelFor="f-text">Finding</Label>
-            <TextArea id="f-text" placeholder="Transport ring failover left the S1 path on a 1 Gbit/s backup link" value={fd.text} onChange={(e) => setFd({ ...fd, text: e.target.value })} />
+            <TextArea id="f-text" placeholder="Transport ring failover left the S1 path on a 1 Gbit/s backup link" key={`fd-text-${keys.fd}`} onChange={(e) => setFd((p) => ({ ...p, text: e.target.value }))} />
             <Label labelFor="f-cf">Counterfactual (needed for Proven)</Label>
-            <Textfield id="f-cf" placeholder="Restoring the primary ring path cleared the S1 drops within 2 min" value={fd.counterfactual} onChange={(e) => setFd({ ...fd, counterfactual: e.target.value })} />
-            <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addFinding', fd); if (r) setFd({ ...fd, text: '', evidence: '', counterfactual: '' }); }}>Add finding</Button></Inline>
+            <Textfield id="f-cf" placeholder="Restoring the primary ring path cleared the S1 drops within 2 min" key={`fd-counterfactual-${keys.fd}`} onChange={(e) => setFd((p) => ({ ...p, counterfactual: e.target.value }))} />
+            <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addFinding', fd); if (r) { setFd((p) => ({ ...p, text: '', evidence: '', counterfactual: '' })); bump('fd'); } }}>Add finding</Button></Inline>
             {state.findings.length ? (
               <Stack space="space.100">
                 <Heading size="small">Update a finding as evidence arrives</Heading>
                 <Inline space="space.100" shouldWrap>
-                  <Box><Label labelFor="u-id">Finding</Label><Select inputId="u-id" options={opts(state.findings.map((f) => f.id))} value={up.id ? { label: up.id, value: up.id } : null} onChange={(o) => setUp({ ...up, id: o.value })} /></Box>
-                  <Box><Label labelFor="u-conf">New confidence</Label><Select inputId="u-conf" options={opts(options.CONFIDENCE)} value={up.confidence ? { label: up.confidence, value: up.confidence } : null} onChange={(o) => setUp({ ...up, confidence: o.value })} /></Box>
-                  <Box><Label labelFor="u-ev">Evidence IDs (replace)</Label><Textfield id="u-ev" placeholder="E1, E2, E8" value={up.evidence} onChange={(e) => setUp({ ...up, evidence: e.target.value })} /></Box>
+                  <Box><Label labelFor="u-id">Finding</Label><Select inputId="u-id" options={opts(state.findings.map((f) => f.id))} value={up.id ? { label: up.id, value: up.id } : null} onChange={(o) => setUp((p) => ({ ...p, id: o.value }))} /></Box>
+                  <Box><Label labelFor="u-conf">New confidence</Label><Select inputId="u-conf" options={opts(options.CONFIDENCE)} value={up.confidence ? { label: up.confidence, value: up.confidence } : null} onChange={(o) => setUp((p) => ({ ...p, confidence: o.value }))} /></Box>
+                  <Box><Label labelFor="u-ev">Evidence IDs (replace)</Label><Textfield id="u-ev" placeholder="E1, E2, E8" key={`up-evidence-${keys.up}`} onChange={(e) => setUp((p) => ({ ...p, evidence: e.target.value }))} /></Box>
                 </Inline>
                 <Label labelFor="u-cf">Counterfactual</Label>
-                <Textfield id="u-cf" placeholder="Rolling back the change cleared the drops within 2 min" value={up.counterfactual} onChange={(e) => setUp({ ...up, counterfactual: e.target.value })} />
-                <Inline><Button isDisabled={busy || !up.id} onClick={async () => { const r = await call('updateFinding', up); if (r) setUp({ id: '', confidence: '', evidence: '', counterfactual: '' }); }}>Update finding</Button></Inline>
+                <Textfield id="u-cf" placeholder="Rolling back the change cleared the drops within 2 min" key={`up-counterfactual-${keys.up}`} onChange={(e) => setUp((p) => ({ ...p, counterfactual: e.target.value }))} />
+                <Inline><Button isDisabled={busy || !up.id} onClick={async () => { const r = await call('updateFinding', up); if (r) { setUp({ id: '', confidence: '', evidence: '', counterfactual: '' }); bump('up'); } }}>Update finding</Button></Inline>
               </Stack>
             ) : null}
           </Stack>
@@ -149,14 +153,14 @@ function App() {
               state.actions.map((a) => [a.id, a.what, a.owner, a.due, a.verify, <Button appearance="subtle" onClick={() => remove(a.id)}>Remove</Button>]))} rowsPerPage={8} />
             <Heading size="small">Add a corrective action</Heading>
             <Label labelFor="a-what">Action</Label>
-            <Textfield id="a-what" value={ac.what} onChange={(e) => setAc({ ...ac, what: e.target.value })} />
+            <Textfield id="a-what" key={`ac-what-${keys.ac}`} onChange={(e) => setAc((p) => ({ ...p, what: e.target.value }))} />
             <Inline space="space.100" shouldWrap>
-              <Box><Label labelFor="a-owner">Owner</Label><Textfield id="a-owner" value={ac.owner} onChange={(e) => setAc({ ...ac, owner: e.target.value })} /></Box>
-              <Box><Label labelFor="a-due">Due</Label><Textfield id="a-due" placeholder="2026-11-24" value={ac.due} onChange={(e) => setAc({ ...ac, due: e.target.value })} /></Box>
+              <Box><Label labelFor="a-owner">Owner</Label><Textfield id="a-owner" key={`ac-owner-${keys.ac}`} onChange={(e) => setAc((p) => ({ ...p, owner: e.target.value }))} /></Box>
+              <Box><Label labelFor="a-due">Due</Label><Textfield id="a-due" placeholder="2026-11-24" key={`ac-due-${keys.ac}`} onChange={(e) => setAc((p) => ({ ...p, due: e.target.value }))} /></Box>
             </Inline>
             <Label labelFor="a-verify">Verification</Label>
-            <Textfield id="a-verify" placeholder="No S1 drops for 7 days after the change" value={ac.verify} onChange={(e) => setAc({ ...ac, verify: e.target.value })} />
-            <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addAction', ac); if (r) setAc({ what: '', owner: '', due: '', verify: '' }); }}>Add action</Button></Inline>
+            <Textfield id="a-verify" placeholder="No S1 drops for 7 days after the change" key={`ac-verify-${keys.ac}`} onChange={(e) => setAc((p) => ({ ...p, verify: e.target.value }))} />
+            <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addAction', ac); if (r) { setAc({ what: '', owner: '', due: '', verify: '' }); bump('ac'); } }}>Add action</Button></Inline>
           </Stack>
         </TabPanel>
 
