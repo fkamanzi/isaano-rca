@@ -10,7 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-command -v forge >/dev/null || sudo npm install -g @forge/cli@latest --no-audit --no-fund --loglevel=error
+command -v forge >/dev/null || npm install -g @forge/cli@latest --no-audit --no-fund --loglevel=error
 npm install --no-audit --no-fund --loglevel=error
 
 read -r -p "Atlassian account email: " FORGE_EMAIL
