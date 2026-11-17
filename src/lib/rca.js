@@ -35,6 +35,8 @@ export function formatMinutes(m) {
   return r ? `${h} h ${r} min` : `${h} h`;
 }
 
+const isoShort = (v) => String(v).replace(/\.\d+Z$/, 'Z');
+
 function clip(s, n) {
   s = String(s ?? '').replace(/\s+/g, ' ').trim();
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
@@ -125,7 +127,7 @@ export function firstDeviation(state, tieWindowS = TIE_WINDOW_S) {
     tie,
     message: tie
       ? `${first.segment} (${first.id}) and ${second.segment} (${second.id}) deviate within ${Math.round(gapS)} s of each other: the order is not provable at this granularity, so check shared resources first.`
-      : `First deviation: ${first.segment} at ${first.at.replace('.000Z', 'Z')} (${first.id})${second ? `, ${Math.round(gapS)} s before ${second.segment} (${second.id})` : ''}. Analyse ${first.segment} first; later segments carry the symptom until evidence shows otherwise.`,
+      : `First deviation: ${first.segment} at ${isoShort(first.at)} (${first.id})${second ? `, ${Math.round(gapS)} s before ${second.segment} (${second.id})` : ''}. Analyse ${first.segment} first; later segments carry the symptom until evidence shows otherwise.`,
   };
 }
 
@@ -321,13 +323,13 @@ function sections(issue, state) {
     ['Impact and timing', [
       `Priority: ${f.priority?.name || 'n/a'}; status: ${f.status?.name || 'n/a'}`,
       `Time to first response: ${formatMinutes(m.toFirstResponseMin)}; time to restore: ${formatMinutes(m.toRestoreMin)}`]],
-    ['Timeline (UTC)', timeline(issue, state).map((e) => `${e.at.replace('.000Z', 'Z')}  ${e.label}${e.detail ? ` (${clip(e.detail, 60)})` : ''}`)],
+    ['Timeline (UTC)', timeline(issue, state).map((e) => `${isoShort(e.at)}  ${e.label}${e.detail ? ` (${clip(e.detail, 60)})` : ''}`)],
     ['First deviation', [fd.message]],
     ['Root cause', causes.length ? causes.map((c) => `${c.id} ${c.text}: ${c.confidence}${cite(c)}${c.counterfactual ? `. Counterfactual: ${c.counterfactual}` : ''}`) : ['None recorded.']],
     ['Contributing factors', byKind('contributing').length ? byKind('contributing').map((c) => `${c.id} ${c.text}: ${c.confidence}${cite(c)}`) : ['None recorded.']],
     ['Excluded hypotheses', byKind('excluded').length ? byKind('excluded').map((c) => `${c.id} ${c.text}${cite(c)}`) : ['None recorded.']],
     ['Corrective actions', (state.actions || []).length ? state.actions.map((a) => `${a.id} ${a.what}; owner ${a.owner || 'n/a'}; due ${a.due || 'n/a'}${a.verify ? `; verified by: ${a.verify}` : ''}`) : ['None recorded.']],
-    ['Evidence register', (state.evidence || []).length ? state.evidence.map((e) => `${e.id} ${e.at.replace('.000Z', 'Z')} ${e.segment} ${e.type}${e.abnormal ? ' (deviation)' : ''}: ${e.summary} (source: ${e.source})`) : ['None recorded.']],
+    ['Evidence register', (state.evidence || []).length ? state.evidence.map((e) => `${e.id} ${isoShort(e.at)} ${e.segment} ${e.type}${e.abnormal ? ' (deviation)' : ''}: ${e.summary} (source: ${e.source})`) : ['None recorded.']],
     ['Open items', [...lock.errors.map((x) => `Blocking: ${x}`), ...lock.warnings].length ? [...lock.errors.map((x) => `Blocking: ${x}`), ...lock.warnings] : ['None: every cause cites its evidence.']],
   ];
 }

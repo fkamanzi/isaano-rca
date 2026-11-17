@@ -7,10 +7,11 @@ import ForgeReconciler, {
 import { invoke } from '@forge/bridge';
 
 const opts = (list) => (list || []).map((v) => ({ label: v, value: v }));
-const short = (iso) => (iso ? iso.replace('T', ' ').replace(/\.000Z$|Z$/, ' UTC') : 'n/a');
+const short = (iso) => (iso ? iso.replace('T', ' ').replace(/(\.\d+)?Z$/, ' UTC') : 'n/a');
 const mins = (m) => (m === null || m === undefined ? 'n/a' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`);
+// head: list of [label, width %]
 const table = (head, rows) => ({
-  head: { cells: head.map((h, i) => ({ key: `h${i}`, content: h })) },
+  head: { cells: head.map(([h, w], i) => ({ key: `h${i}`, content: h, width: w })) },
   rows: rows.map((r, i) => ({ key: `r${i}`, cells: r.map((c, j) => ({ key: `c${i}-${j}`, content: c })) })),
 });
 
@@ -77,13 +78,13 @@ function App() {
 
         <TabPanel>
           <Box padding="space.100">
-            <DynamicTable {...table(['Time (UTC)', 'Event', 'Detail'], timeline.map((e) => [short(e.at), e.label, e.detail || '']))} rowsPerPage={12} />
+            <DynamicTable {...table([['Time (UTC)', 24], ['Event', 50], ['Detail', 26]], timeline.map((e) => [short(e.at), e.label, e.detail || '']))} rowsPerPage={12} />
           </Box>
         </TabPanel>
 
         <TabPanel>
           <Stack space="space.150">
-            <DynamicTable {...table(['ID', 'Time (UTC)', 'Segment', 'Type', 'What it shows', 'Source', ''],
+            <DynamicTable {...table([['ID', 5], ['Time (UTC)', 15], ['Segment', 11], ['Type', 8], ['What it shows', 38], ['Source', 15], ['', 8]],
               state.evidence.map((e) => [e.id, short(e.at), e.segment, e.abnormal ? `${e.type} ⚠` : e.type, e.summary, e.source,
                 <Button appearance="subtle" onClick={() => remove(e.id)}>Remove</Button>]))} rowsPerPage={8} />
             <Heading size="small">Add evidence</Heading>
@@ -117,7 +118,7 @@ function App() {
 
         <TabPanel>
           <Stack space="space.150">
-            <DynamicTable {...table(['ID', 'Kind', 'Finding', 'Confidence', 'Evidence', 'Counterfactual', ''],
+            <DynamicTable {...table([['ID', 5], ['Kind', 11], ['Finding', 38], ['Confidence', 11], ['Evidence', 10], ['Counterfactual', 17], ['', 8]],
               state.findings.map((f) => [f.id, f.kind, f.text, f.confidence, f.evidence.join(', ') || 'none', f.counterfactual || '',
                 <Button appearance="subtle" onClick={() => remove(f.id)}>Remove</Button>]))} rowsPerPage={8} />
             <Heading size="small">Add a finding</Heading>
@@ -149,7 +150,7 @@ function App() {
 
         <TabPanel>
           <Stack space="space.150">
-            <DynamicTable {...table(['ID', 'Action', 'Owner', 'Due', 'Verified by', ''],
+            <DynamicTable {...table([['ID', 5], ['Action', 37], ['Owner', 16], ['Due', 11], ['Verified by', 23], ['', 8]],
               state.actions.map((a) => [a.id, a.what, a.owner, a.due, a.verify, <Button appearance="subtle" onClick={() => remove(a.id)}>Remove</Button>]))} rowsPerPage={8} />
             <Heading size="small">Add a corrective action</Heading>
             <Label labelFor="a-what">Action</Label>
