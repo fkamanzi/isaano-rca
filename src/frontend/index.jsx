@@ -22,6 +22,8 @@ function App() {
   const [fd, setFd] = useState({ kind: 'cause', text: '', confidence: 'Supported', evidence: '', counterfactual: '' });
   const [ac, setAc] = useState({ what: '', owner: '', due: '', verify: '' });
   const [notice, setNotice] = useState('');
+  const [paste, setPaste] = useState('');
+  const [importResult, setImportResult] = useState(null);
 
   const call = async (name, payload) => {
     setBusy(true);
@@ -90,6 +92,21 @@ function App() {
             <TextArea id="ev-sum" placeholder="S1 link down to MME pool, 08:42:03 to 08:57:10" value={ev.summary} onChange={(e) => setEv({ ...ev, summary: e.target.value })} />
             <Checkbox label="Shows a deviation (abnormal)" isChecked={ev.abnormal} onChange={(e) => setEv({ ...ev, abnormal: e.target.checked })} />
             <Inline><Button appearance="primary" isDisabled={busy} onClick={async () => { const r = await call('addEvidence', ev); if (r) setEv({ ...ev, at: '', summary: '', source: '' }); }}>Add evidence</Button></Inline>
+            <Heading size="small">Paste rows from an export</Heading>
+            <Text>One row per item, comma, semicolon or tab separated: {(options.IMPORT_COLUMNS || []).join(', ')}. Abnormal is yes or no; a header row is skipped.</Text>
+            <TextArea id="ev-import" placeholder="2026-11-17T06:01:00Z, Transport, kpi, AGG-KGL-01 PM, EF queue drops 0% to 2.1%, yes" value={paste} onChange={(e) => setPaste(e.target.value)} />
+            <Inline><Button isDisabled={busy || !paste.trim()} onClick={async () => {
+              const r = await call('importEvidence', { text: paste });
+              if (r) {
+                setImportResult({ count: r.imported, errors: r.importErrors || [] });
+                if (!(r.importErrors || []).length) setPaste('');
+              }
+            }}>Import rows</Button></Inline>
+            {importResult ? (
+              <SectionMessage appearance={importResult.errors.length ? 'warning' : 'success'} title={`${importResult.count} evidence item(s) imported`}>
+                {importResult.errors.map((x, i) => <Text key={`ie${i}`}>{x}</Text>)}
+              </SectionMessage>
+            ) : null}
           </Stack>
         </TabPanel>
 

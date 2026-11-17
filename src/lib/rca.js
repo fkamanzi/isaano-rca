@@ -170,7 +170,8 @@ function idCounter(state, letter) {
   return `${letter}${n}`;
 }
 
-export function addEvidence(state, input, who) {
+// No user references (account IDs) are stored: the register holds only what the evidence shows.
+export function addEvidence(state, input) {
   const at = toIso(input.at);
   if (!at) throw new Error('Give the evidence time in UTC, for example 2026-11-17T08:42:00Z.');
   if (!String(input.summary || '').trim()) throw new Error('Describe what the evidence shows.');
@@ -183,10 +184,71 @@ export function addEvidence(state, input, who) {
     abnormal: input.abnormal === true || input.abnormal === 'true',
     summary: clip(input.summary, 400),
     link: clip(input.link || '', 300),
-    addedBy: who || null,
   };
   state.evidence.push(item);
   return item;
+}
+
+// Bulk import: one evidence item per CSV row, as exported from an alarm list, a PM report
+// or a change calendar. Columns: time (UTC), segment, type, source, what it shows, abnormal.
+// A header row is skipped. Segment and type must match the lists; abnormal is yes/no.
+export const IMPORT_COLUMNS = ['time_utc', 'segment', 'type', 'source', 'what_it_shows', 'abnormal'];
+export const IMPORT_MAX_ROWS = 200;
+
+// The separator is whichever of tab, comma or semicolon occurs most often outside quotes,
+// so spreadsheet pastes (tabs) and European CSV (semicolons) both work.
+function separatorOf(line) {
+  const count = { '\t': 0, ',': 0, ';': 0 };
+  let quoted = false;
+  for (const ch of line) {
+    if (ch === '"') quoted = !quoted;
+    else if (!quoted && ch in count) count[ch] += 1;
+  }
+  return ['\t', ',', ';'].reduce((best, c) => (count[c] > count[best] ? c : best), '\t');
+}
+
+export function parseCsvLine(line) {
+  const sep = separatorOf(line);
+  const cells = [];
+  let cur = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i += 1; } else if (ch === '"') quoted = false;
+      else cur += ch;
+    } else if (ch === '"' && cur.trim() === '') { quoted = true; cur = ''; } else if (ch === sep) { cells.push(cur.trim()); cur = ''; } else cur += ch;
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+const pick = (list, value) => list.find((v) => v.toLowerCase() === String(value || '').trim().toLowerCase()) || null;
+
+export function importEvidence(state, text) {
+  const lines = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const added = [];
+  const errors = [];
+  if (lines.length > IMPORT_MAX_ROWS + 1) errors.push(`Only the first ${IMPORT_MAX_ROWS} rows are imported.`);
+  lines.slice(0, IMPORT_MAX_ROWS + 1).forEach((line, i) => {
+    const cells = parseCsvLine(line);
+    if (i === 0 && /time/i.test(cells[0]) && /segment/i.test(cells[1] || '')) return;
+    const row = `Row ${i + 1}`;
+    if (cells.length < 6) { errors.push(`${row}: expected 6 columns (${IMPORT_COLUMNS.join(', ')}), found ${cells.length}.`); return; }
+    const [at, segRaw, typeRaw, source, summary, abnormalRaw] = cells;
+    const segment = pick(SEGMENTS, segRaw);
+    const type = pick(EVIDENCE_TYPES, typeRaw);
+    if (!segment) { errors.push(`${row}: segment "${segRaw}" is not one of ${SEGMENTS.join(', ')}.`); return; }
+    if (!type) { errors.push(`${row}: type "${typeRaw}" is not one of ${EVIDENCE_TYPES.join(', ')}.`); return; }
+    const flag = String(abnormalRaw || '').trim().toLowerCase();
+    if (!['yes', 'no', 'true', 'false', 'y', 'n', '1', '0'].includes(flag)) { errors.push(`${row}: abnormal must be yes or no.`); return; }
+    try {
+      added.push(addEvidence(state, { at, segment, type, source, summary, abnormal: ['yes', 'true', 'y', '1'].includes(flag) }));
+    } catch (e) {
+      errors.push(`${row}: ${e.message}`);
+    }
+  });
+  return { added, errors };
 }
 
 export function parseIds(value) {

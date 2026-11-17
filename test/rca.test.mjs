@@ -122,3 +122,31 @@ test('bad input is refused with a clear message', () => {
   assert.throws(() => addEvidence(s, { at: 'yesterday', summary: 'x' }), /UTC/);
   assert.throws(() => addFinding(s, { text: '' }), /State the finding/);
 });
+
+test('importEvidence adds valid rows, skips the header and reports bad rows', async () => {
+  const { importEvidence, parseCsvLine } = await import('../src/lib/rca.js');
+  const s = emptyState();
+  const text = [
+    'time_utc,segment,type,source,what_it_shows,abnormal',
+    '2026-11-17T06:01:00Z,Transport,kpi,AGG-KGL-01 PM,"EF queue drops 0% to 2.1%, 06:00-06:05",yes',
+    '2026-11-17T06:03:10Z;ims / voice;Alarm;SBC-KGL-1;SIP 408 timeouts rising;YES',
+    '2026-11-17T06:05:00Z,Radio,alarm,eNB-1042,S1 link flaps,yes',
+    'not-a-time,Core,log,AMF-1,Registration failures,no',
+    '2026-11-17T06:20:00Z,Core,log,AMF-1,Registration normal,maybe',
+    'only,three,cells',
+  ].join('\n');
+  const r = importEvidence(s, text);
+  assert.equal(r.added.length, 2);
+  assert.equal(s.evidence[0].segment, 'Transport');
+  assert.equal(s.evidence[0].summary, 'EF queue drops 0% to 2.1%, 06:00-06:05');
+  assert.equal(s.evidence[1].segment, 'IMS / voice');
+  assert.equal(s.evidence[1].type, 'alarm');
+  assert.equal(s.evidence[1].abnormal, true);
+  assert.equal(r.errors.length, 4);
+  assert.match(r.errors[0], /Row 4: segment "Radio"/);
+  assert.match(r.errors[1], /Row 5: Give the evidence time in UTC/);
+  assert.match(r.errors[2], /Row 6: abnormal must be yes or no/);
+  assert.match(r.errors[3], /Row 7: expected 6 columns/);
+  assert.equal(firstDeviation(s).segment, 'Transport');
+  assert.deepEqual(parseCsvLine('a\tb\t"c, d"'), ['a', 'b', 'c, d']);
+});

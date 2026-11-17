@@ -11,6 +11,7 @@ After a major outage the root-cause report is written from memory, under pressur
 ## What it does
 
 - **Timeline (UTC):** ticket created, status and priority changes, first and latest comment, resolution, merged with every evidence item, all normalised to UTC. Time to first response and time to restore are computed from the ticket.
+- **Paste rows from an export:** alarm lists, PM reports and change calendars paste straight in as CSV or tab-separated rows (time, segment, type, source, what it shows, abnormal); bad rows are reported, not guessed.
 - **Evidence register:** each item has a type, network segment (RAN, Transport, Core, IMS / voice, Services, Cloud, Site power, Other), source system, UTC time, what it shows and whether it shows a deviation.
 - **First deviation:** the earliest abnormal evidence per segment. If two segments deviate within 60 s of each other, it says the order cannot be proven at that granularity and points to shared resources instead of guessing.
 - **Evidence lock:** a finding that is *Proven* or *Supported* must cite existing evidence; *Proven* also needs evidence that shows a deviation and a counterfactual (what changed when the cause was removed); corrective actions need an owner and a due date. Until the lock passes, the Publish button stays disabled.
@@ -47,6 +48,10 @@ forge install --site <your-site>.atlassian.net --product jira
 From a shell without a desktop keychain (Google Cloud Shell, a CI box), `source tools/forge-env.sh you@example.com` asks for the API token once for that terminal tab, then `bash tools/deploy.sh` registers, deploys to production and installs on your Forge demo site.
 
 Open an incident in a Jira Service Management project: the **Isaano RCA (evidence-locked)** panel is under the issue. In Rovo chat, pick **Isaano RCA Investigator** from the agents.
+
+## Privacy and terms
+
+The app stores only what users enter (evidence, findings, actions) in its Forge storage, stores no account IDs and makes no calls outside Atlassian: see [PRIVACY.md](PRIVACY.md) and [TERMS.md](TERMS.md).
 
 ## Licence
 

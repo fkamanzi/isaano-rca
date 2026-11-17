@@ -5,8 +5,8 @@ import Resolver from '@forge/resolver';
 import { getIssue, addInternalComment } from './lib/jira.js';
 import { loadState, saveState } from './lib/store.js';
 import {
-  addAction, addEvidence, addFinding, checkLock, firstDeviation, metrics, removeItem,
-  reportAdf, reportMarkdown, timeline, EVIDENCE_TYPES, SEGMENTS, FINDING_KINDS, CONFIDENCE,
+  addAction, addEvidence, addFinding, checkLock, firstDeviation, importEvidence, metrics, removeItem,
+  reportAdf, reportMarkdown, timeline, EVIDENCE_TYPES, SEGMENTS, FINDING_KINDS, CONFIDENCE, IMPORT_COLUMNS,
 } from './lib/rca.js';
 
 async function snapshot(issueKeyOrId) {
@@ -24,7 +24,7 @@ function view(issue, state) {
     firstDeviation: firstDeviation(state),
     lock: checkLock(state, issue),
     state,
-    options: { EVIDENCE_TYPES, SEGMENTS, FINDING_KINDS, CONFIDENCE },
+    options: { EVIDENCE_TYPES, SEGMENTS, FINDING_KINDS, CONFIDENCE, IMPORT_COLUMNS },
   };
 }
 
@@ -44,10 +44,17 @@ async function mutate(context, change) {
   return view(issue, state);
 }
 
-resolver.define('addEvidence', ({ payload, context }) => mutate(context, (s) => addEvidence(s, payload, context.accountId)));
+resolver.define('addEvidence', ({ payload, context }) => mutate(context, (s) => addEvidence(s, payload)));
 resolver.define('addFinding', ({ payload, context }) => mutate(context, (s) => addFinding(s, payload)));
 resolver.define('addAction', ({ payload, context }) => mutate(context, (s) => addAction(s, payload)));
 resolver.define('remove', ({ payload, context }) => mutate(context, (s) => removeItem(s, payload.id)));
+
+resolver.define('importEvidence', async ({ payload, context }) => {
+  const { issue, state } = await snapshot(issueOf(context));
+  const result = importEvidence(state, payload?.text);
+  if (result.added.length) await saveState(issue.id, state);
+  return { ...view(issue, state), imported: result.added.length, importErrors: result.errors };
+});
 
 resolver.define('publish', async ({ context }) => {
   const { issue, state } = await snapshot(issueOf(context));
@@ -86,7 +93,7 @@ const ACTIONS = {
   },
   'add-evidence': async (p) => {
     const { issue, state } = await snapshot(issueFromAction(p));
-    const item = addEvidence(state, p, p?.context?.accountId);
+    const item = addEvidence(state, p);
     await saveState(issue.id, state);
     return { added: item, firstDeviation: firstDeviation(state) };
   },
